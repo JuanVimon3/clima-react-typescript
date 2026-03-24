@@ -1,33 +1,75 @@
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import type { SearchType } from "../../types";
 import { countries } from "../../data/countries"
+import styles from "./Form.module.css";
+import Alert from "../Alert/Alert";
 
 export default function Form() {
-  return (
-    <form>
 
-      <div>
+  const [search, setSearch] = useState<SearchType>({
+    city: '',
+    country: ''
+  });
+
+  const [alert, setAlert] = useState<string>('');
+
+  const handleChange = (e : ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>) => {
+    setSearch({
+      ...search,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) =>  {
+    e.preventDefault();
+
+    if(Object.values(search).includes('')){
+      setAlert('Todos los campos son obligatorios');
+      return;
+    }
+  }
+
+  return (
+    <form 
+      className={styles.form}
+      onSubmit={handleSubmit}
+    >
+
+      {alert && <Alert>{alert}</Alert>}
+
+      <div className={styles.field}>
         <label htmlFor="city">Ciudad:</label>
         <input 
             type="text"
             id= "city"
             name="city"
-            placeholder="Ciudad "  
+            placeholder="Ciudad "
+            value={search.city}
+            onChange={handleChange}
         />
       </div>
 
-      <div>
+      <div className={styles.field}>
         <label htmlFor="country">País</label>
-        <option value="">--Seleccione un país--</option>
-        {countries.map(country => (
-            <option 
-                value={country.code}
-                key= {country.code}
-            >
-                {country.name}
-            </option>
-        ))}
+        <select 
+            id="country"
+            name="country"
+            value={search.country}
+            onChange={handleChange}
+        >
+          <option value="">--Seleccione un país--</option>
+          {countries.map(country => (
+              <option 
+                  value={country.code}
+                  key= {country.code}
+              >
+                  {country.name}
+              </option>
+          ))}
+        </select>
       </div>
 
-      <input type="submit" value= "Consultar clima" />
+      <input className={styles.submit}  type="submit" value= "Consultar clima" />
 
     </form>
   )
