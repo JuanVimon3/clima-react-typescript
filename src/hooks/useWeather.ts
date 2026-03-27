@@ -1,20 +1,60 @@
+import { useMemo, useState } from "react";
 import axios from "axios"
-import type { SearchType, Weather } from "../types";
+import { z } from "zod";
+// import {object, string, number, Output, parse} from "valibot"
+import type { SearchType } from "../types";
 
 
 //Type guard o assertion function para verificar que el resultado de la consulta es del tipo WeatherResult, si no es del tipo WeatherResult se lanza un error.
-function isWeatherResponse(weather: unknown): weather is Weather {
- return(
-    Boolean(weather) &&
-    typeof weather === 'object' &&
-    typeof (weather as Weather).name === 'string' &&
-    typeof (weather as Weather).main.temp === 'number' &&
-    typeof (weather as Weather).main.temp_min === 'number' &&
-    typeof (weather as Weather).main.temp_max === 'number'
- )
-}
+// function isWeatherResponse(weather: unknown): weather is Weather {
+//  return(
+//     Boolean(weather) &&
+//     typeof weather === 'object' &&
+//     typeof (weather as Weather).name === 'string' &&
+//     typeof (weather as Weather).main.temp === 'number' &&
+//     typeof (weather as Weather).main.temp_min === 'number' &&
+//     typeof (weather as Weather).main.temp_max === 'number'
+//  )
+// }
 
+//Zod
+
+const Weather = z.object({
+    name: z.string(),
+    main: z.object({
+        temp: z.number(),
+        temp_min: z.number(),
+        temp_max: z.number()
+    })
+});
+
+export type Weather = z.infer<typeof Weather>;
+
+//Valibot
+
+// const WeatherSchema = object({
+//     name: string(),
+//     main: object({
+//         temp: number(),
+//         temp_min: number(),
+//         temp_max: number()
+//     }) 
+// })
+
+// type Weather = Output<typeof WeatherSchema>;
+
+
+ 
 export default function useWeather() {
+
+    const [weather, setWeather] = useState<Weather>({
+        name : '',
+        main: {
+            temp: 0,
+            temp_min: 0,
+            temp_max: 0
+        }
+    }) 
 
     const fetchWeather = async (search: SearchType) => {
        try {
@@ -38,16 +78,44 @@ export default function useWeather() {
         // console.log(wheatherResult.name); 
 
         //Type guard para verificar que el resultado de la consulta es del tipo WeatherResult por medio de la funcion isWeatherResponse, si no es del tipo WeatherResult se lanza un error.
-        const {data: wheatherResult } = await axios.get(weatherUrl);
-        const result = isWeatherResponse(wheatherResult)
+        // const {data: wheatherResult } = await axios.get(weatherUrl);
+        // const result = isWeatherResponse(wheatherResult)
 
+        // console.log(result);
+
+        //Zod
+
+        const {data: wheatherResult } = await axios.get(weatherUrl);
+        const result = Weather.safeParse(wheatherResult); 
         console.log(result);
+        if(result.success){
+            setWeather(result.data); 
+        } else{
+            console.log('Respuesta no valida');
+        }
+
+        //Valibot
+
+        // const {data: wheatherResult } = await axios.get(weatherUrl);
+        // const result = parse(WeatherSchema, wheatherResult);
+        
+        // if(result){
+        //     console.log(result.name);
+        //     console.log(result.main.temp); 
+        // } else{
+        //     console.log('Respuesta no valida');
+        // }
+
     } catch (error) {
         console.log(error);
        }
     }
 
+    const hasWeatherData = useMemo(() => weather.name , [weather]);
+
     return{
-        fetchWeather
+        weather,
+        fetchWeather,
+        hasWeatherData
     }
 }
